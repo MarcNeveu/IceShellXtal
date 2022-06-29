@@ -1,0 +1,11 @@
+------------------------------------------|------------------------------------------
+IceShellXtal input file
+------------------------------------------|------------------------------------------
+PHREEQC input file                        | PHREEQC/Frac_Scn1_TC17_ISX_05_28.txt
+PHREEQC database: 0=TC17, 1=frezchemSiCH4 | 0
+Number of temperature steps               | 235
+Starting temperature (C)                  | 0.4
+Temperature step, < 0                     | -0.05
+Crystallization mode: 0=equil, 1=frac     | 0
+Plot salt deposit contours? 0=no, 1=yes   | 0
+------------------------------------------|------------------------------------------
