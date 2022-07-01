@@ -13,13 +13,13 @@
 #include "Plot.h"
 
 int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, SDL_Texture* pies_tex, SDL_Texture **num_tex, char* FontFile);
-int ChamberPlot(SDL_Surface **chamber, char *FontFile, int ntemp, double radius, double **R2Hcompo, double Rchamber, double R1, int nsalts, int contour);
+int ChamberPlot(SDL_Surface **chamber, char *FontFile, int ntemp, double radius, double **R2Hcompo, double Rchamber, double R1, int nsalts, int contour, int dbase_type);
 int ExtractWrite(int instance, double*** data, int line, int nvar);
 int MineralName(int i, char **name, int dbase_type);
 double Vm(char *name, char *dbase);
 double VsphSegm(double x, double R2, double b);
 double R2iceCap (double x, double Vsol, double R1, double H);
-SDL_Color minColor (int i);
+SDL_Color minColor (int i, int dbase_type);
 
 int main(int argc, char *argv[]){
 
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]){
 	char *PHRQin = (char *) malloc(1024*sizeof(char));
 	PHRQin[0] = '\0';
 	strncat(infile,path,strlen(path)-20);
-	strcat(infile,"PHREEQC/IceShellXtal_input.txt");
+	strcat(infile,"IceShellXtal_input.txt");
 
 	f = fopen (infile,"r"); 	// Open input file
 	if (f == NULL) printf("IceShellXtal: Missing input file. Path: %s\n", infile);
@@ -122,11 +122,50 @@ int main(int argc, char *argv[]){
 	SetDumpStringOn(phreeqc, 1);
 	SetDumpFileOn(phreeqc, 1);
 	printf("Running PHREEQC\n"); // First temperature step is run from the PHREEQC input file
+	printf("%s\n", infile);
 	if (RunFile(phreeqc,infile) != 0) OutputErrorString(phreeqc);
 	else printf("PHREEQC ran successfully\n");
 
 	ExtractWrite(phreeqc, &simdata, 1, nvar); // Extract SELECTED_OUTPUT into simdata
-	for (i=0;i<nvar;i++) printf("%g\t", simdata[1][i]);
+
+	infile[0] = '\0';
+	strncat(infile,path,strlen(path)-20);
+	strcat(infile, "Output_compo.txt");
+	f = fopen (infile,"w"); // Open output file
+	// Print headers to output file
+	fprintf(f, "Sim \tpH \tT(C) \tIS \tmH2O(kg) \tchrgbal \tpcterr \tCa(M) \tMg(M) \tNa(M) \tK(M) \tCl(M) \tS(M) \t");
+	if (dbase_type) { // Carbonate-Si-CH4 database
+		fprintf(f, "C(M) \tSi(M) \tMtg(M) \t");
+	}
+	fprintf(f, "Bah(M) \tlog_aH2O \t"
+				"Ice(mol) \tdIce(mol) \tHalite(mol) \tdHalite(mol) \tHydrohalite(mol) \tdHydrohalite(mol) \tSylvite(mol) \tdSylvite(mol) "
+				"\tAntarcticite(mol) \tdAntarcticite(mol) \tBischofite(mol) \tdBischofite(mol) \tMgCl2:8H2O(mol) \tdMgCl2:8H2O(mol) \t"
+				"MgCl2:12H2O(mol) \tdMgCl2:12H2O(mol) \tCarnallite(mol) \tdCarnallite(mol) \tTachyhydrite(mol) \tdTachyhydrite(mol) \t"
+				"Anhydrite(mol) \tdAnhydrite(mol) \tArcanite(mol) \tdArcanite(mol) \tEpsomite(mol) \tdEpsomite(mol) \tGypsum(mol) \tdGypsum(mol) \t"
+				"Meridianiite(mol) \tdMeridianiite(mol) \tMirabilite(mol) \tdMirabilite(mol) \tPicromerite(mol) \tdPicromerite(mol) \t"
+				"Glaserite(mol) \tdGlaserite(mol) \tBloedite(mol) \tdBloedite(mol) \tKieserite(mol) \tdKieserite(mol) \tThenardite(mol) \t"
+				"dThenardite(mol) \tHexahydrite(mol) \tdHexahydrite(mol) \t");
+	if (!dbase_type) { // TC17 database
+		fprintf(f, "Na2SO4:7H2O(mol) \tdNa2SO4:7H2O(mol) \tStarkeyite(mol) \tdStarkeyite(mol) \tPentahydrite(mol) \tdPentahydrite(mol) \t"
+				"Bassanite(mol) \tdBassanite(mol) \tGlauberite(mol) \tdGlauberite(mol) \tLabile_Salt(mol) \tdLabile_Salt(mol) \tLeonite(mol) \tdLeonite(mol) \t"
+				"Langbeinite(mol) \tdLangbeinite(mol) \tSyngenite(mol) \tdSyngenite(mol) \tPolyhalite(mol) \tdPolyhalite(mol) \tKainite(mol) \tdKainite(mol) \t");
+	}
+	else { // Carbonate-Si-CH4 database
+		fprintf(f, "Aragonite(mol) \tdAragonite(mol) \tArtinite(mol) \tdArtinite(mol) \tCalcite(mol) \tdCalcite(mol) \tDolomite(mol) \tdDolomite(mol) \t"
+				"Hydromagnesite(mol) \tdHydromagnesite(mol) \tIkaite(mol) \tdIkaite(mol) \tKalicinite(mol) \tdKalicinite(mol) \tLandsfordite(mol) \t"
+				"dLandsfordite(mol) \tMagnesite(mol) \tdMagnesite(mol) \tNa2CO3:7H2O(mol) \tdNa2CO3:7H2O(mol) \tNahcolite(mol) \tdNahcolite(mol) \t"
+				"Natron(mol) \tdNatron(mol) \tNesquehonite(mol) \tdNesquehonite(mol) \tTrona(mol) \tdTrona(mol) \tVaterite(mol) \tdVaterite(mol) \t"
+				"Akermanite(mol) \tdAkermanite(mol) \tAnthophyllite(mol) \tdAnthophyllite(mol) \tAntigorite(mol) \tdAntigorite(mol) \tChalcedony(mol) \t"
+				"dChalcedony(mol) \tChrysotile(mol) \tdChrysotile(mol) \tDiopside(mol) \tdDiopside(mol) \tEnstatite(mol) \tdEnstatite(mol) \tForsterite(mol) \t"
+				"dForsterite(mol) \tQuartz(mol) \tdQuartz(mol) \tSepiolite(mol) \tdSepiolite(mol) \tSiO2(am)(mol) \tdSiO2(am)(mol) \tTalc(mol) \t"
+				"dTalc(mol) \tMethane_hydrate(mol) \tdMethane_hydrate(mol) \t");
+	}
+	fprintf(f, "SolnDensity(kg/L) \tSolnVolume(L) \tPressure(atm) \tConductivity(uS/cm)\n");
+	for (i=0;i<nvar;i++) {
+		fprintf(f, "%g\t", simdata[1][i]); // Print to output file
+		printf("%g\t", simdata[1][i]);     // Print to terminal
+	}
+	fprintf(f, "\n");
 	printf("\n");
 
 	for (i=2;i<ntemp;i++) { // Re-run the same input at lower temperatures, using the solution of the previous temperature step.
@@ -139,7 +178,7 @@ int main(int argc, char *argv[]){
 		AccumulateLine(phreeqc, "USE equilibrium_phases 1"); // Allowing the same phases to precipitate. Amounts of precipitate are memorized only in equilibrium crystallization mode.
 
 		AccumulateLine(phreeqc, "SELECTED_OUTPUT"); // The SELECTED_OUTPUT instructions below should be exactly the same as those in the PHREEQC input file, otherwise the first row of outputs will be different.
-		AccumulateLine(phreeqc, " -file /Users/mneveu/eclipse-workspace/IceShellXtal/PHREEQC/Out/selected.out");
+		AccumulateLine(phreeqc, " -file ./selected.out");
 		AccumulateLine(phreeqc, " -high_precision true");
 		AccumulateLine(phreeqc, " -reset false");
 		AccumulateLine(phreeqc, " -simulation true");
@@ -150,7 +189,8 @@ int main(int argc, char *argv[]){
 		AccumulateLine(phreeqc, " -water true");
 		AccumulateLine(phreeqc, " -charge_balance true");
 		AccumulateLine(phreeqc, " -percent_error true");
-		AccumulateLine(phreeqc, " -totals Ca Mg Na K Cl S Bah");
+		if (!dbase_type) AccumulateLine(phreeqc, " -totals Ca Mg Na K Cl S Bah");
+		else AccumulateLine(phreeqc, " -totals Ca Mg Na K Cl S C Si Mtg Bah");
 		AccumulateLine(phreeqc, " -activities H2O");
 		if (!dbase_type) // TC17 database
 			AccumulateLine(phreeqc, " -equilibrium_phases Ice(s) Halite Hydrohalite Sylvite Antarcticite Bischofite MgCl2:8H2O "
@@ -181,9 +221,14 @@ int main(int argc, char *argv[]){
 		else printf("PHREEQC ran successfully at i=%d (ntemp=%d)\n", i, ntemp);
 
 		ExtractWrite(phreeqc, &simdata, i, nvar); // Memorize PHREEQC SELECTED_OUTPUT in simdata
-		for (j=0;j<nvar;j++) printf("%g\t", simdata[i][j]);
+		for (j=0;j<nvar;j++) {
+			fprintf(f, "%g\t", simdata[i][j]); // Print to output file
+			printf("%g\t", simdata[i][j]);     // Print to terminal
+		}
+		fprintf(f, "\n");
 		printf("\n");
 	}
+	fclose(f);
 
 	if (DestroyIPhreeqc(phreeqc) != IPQ_OK) OutputErrorString(phreeqc);
 
@@ -203,12 +248,20 @@ int main(int argc, char *argv[]){
 	k = 0;
 	name[0] = '\0';
 
-	int isaltmax = 0;                              // Max column index of salts in PHREEQC output
-	if (!dbase_type) isaltmax = 15+2*33;           // ... in case of TC17 database
-	else isaltmax = 15+2*50;                       // ... for carbonate-Si-CH4 database
+	int isaltmin = 0; // Min column index of salts in PHREEQC output
+	int isaltmax = 0; // Max column index of salts in PHREEQC output
+
+	if (!dbase_type) { // ... in case of TC17 database
+		isaltmin = 15;
+		isaltmax = isaltmin+2*33;
+	}
+	else {             // ... for carbonate-Si-CH4 database
+		isaltmin = 18;
+		isaltmax = isaltmin+2*50;
+	}
 
 	// Find number and indices of minerals that crystallized
-	for (j=15;j<isaltmax;j=j+2) { // Only for solids columns, skip delta columns
+	for (j=isaltmin;j<isaltmax;j=j+2) { // Only for solids columns, skip delta columns
 		for (i=1;i<ntemp;i++) simdata[0][j] += simdata[i][j]; // Sum in first row
 		if (simdata[0][j] > 0.0) {
 			mineral_index[k] = j;
@@ -235,8 +288,7 @@ int main(int argc, char *argv[]){
 	}
 	for (i=1;i<ntemp;i++) {
 		volumes[i][0] = simdata[i][2] + 273.15; // Temperature (K)
-		if (!dbase_type) volumes[i][2] = simdata[i][82] *1000.0; // Solution volume (cm3), TC17 database
-		else             volumes[i][2] = simdata[i][116]*1000.0; //                        carbonate-Si-CH4 database
+		volumes[i][2] = simdata[i][isaltmax+1] *1000.0; // Solution volume (cm3)
 		for (j=0;j<nsalts+1;j++) {
 			MineralName(mineral_index[j], &name, dbase_type);
 			volumes[i][j+4] = simdata[i][mineral_index[j]]*Vm(name, dbase); // Individual solid volumes (cm3)
@@ -245,7 +297,7 @@ int main(int argc, char *argv[]){
 		volumes[i][1] = volumes[i-1][1] - volumes[i-1][2] + volumes[i][2] + volumes[i][3] + volumes[i][4]; // Total chamber volume (cm3) = old vtot - old_solution + solution + total new salt + new ice
 	}
 
-	if (!eqFrac) {
+	if (!eqFrac) { // Equilibrium well-mixed mode
 		printf("\nT(K) \tVsol \tV_ice \tIndividual salt volumes (cm3)\n");
 		for (i=0;i<ntemp;i++) {
 			printf("%g \t", volumes[i][0]);
@@ -256,7 +308,7 @@ int main(int argc, char *argv[]){
 			printf("\n");
 		}
 	}
-	else {
+	else { // Fractional, no mixing mode
 		printf("\nT(K) \tVtot \tVsol \tVsalt \tV_ice \tIndividual salt volumes (cm3)\n");
 		for (i=0;i<ntemp;i++) {
 			for(j=0;j<nsalts+5;j++) {
@@ -322,6 +374,7 @@ int main(int argc, char *argv[]){
 	}
 	// Not mixed, fractional crystallization mode. Output chamber size and inner radius R1 at temperature of first salt formation, and go on.
 	printf("\nRchamber = %g, R1 = %g\n", Rchamber, R1);
+	printf("Salt first precipitates in the presence of ice at step %d\n", firstSalt);
 
 	// Calculate H and R2
 	double deltah = 0.0;          // Incremental salt deposit height (cm)
@@ -340,6 +393,7 @@ int main(int argc, char *argv[]){
 	int iter = 0;                 // Number of iterations in binary search
 
 	for (i=firstSalt;i<ntemp;i++) {
+//		printf("i=%d, Vsol=%g, b=%g, H=%g, R1calc=%g, R2=%g\n", i, volumes[i][2], b, H, R1calc, R2);
 		// Calculate H, the cumulative height of the salt deposit, using a binary search. Store in R2Hcompo.
 	    // If ice covers salt, reset salt deposit height and reset R1calc to R2
 	    if (R2 < R1calc-H) {
@@ -349,17 +403,24 @@ int main(int argc, char *argv[]){
 	    }
 	    if (volumes[i][2] < volumes[0][2]*1.0e-3) break; // Stop when solution volume is sufficiently low
 	    else {
-	        b = R1calc - H;                      // Width of spherical segment (cm) TODO double-check
+	        b = R1calc - H;
 	        V = volumes[i][3]; // Incremental salt volume (cm3)
 	        mid = 0.0;
 	        tem = 0.0;
 	        low = 0.0;
-	        high = R1calc;
+	        high = R2;
 
 	        if (V - VsphSegm(low, R2, b) > 0.0) { // Invert bounds
+	        	printf("Inverting bounds in binary search for deltah\n");
 	            tem = low;
 	            low = high;
 	            high = tem;
+	        }
+	        while (VsphSegm(high, R2, b) < 0.0) { // Decrease high bound
+	            high *= (1.0-threshold);
+	        }
+	        while (VsphSegm(low, R2, b) < 0.0) { // Increase low bound
+	            low /= (1.0-threshold);
 	        }
 
 	        iter = 0;
@@ -370,8 +431,13 @@ int main(int argc, char *argv[]){
 	            Vmid = VsphSegm(mid, R2, b);
 	            if(V - Vmid < -threshold*V) low = mid;
 	            if (V - Vmid > threshold*V) high = mid;
-	            if (iter > 100) exit(0);
+//	            printf("i=%d, iteration %d, deltah = %.12g cm, V=%g cm3, Vmid = %g cm3\n", i, iter, mid, V, Vmid);
+	            if (iter > 100) {
+	            	printf("IceShellXtal: could not converge within 100 iterations on H calculation\n");
+	            	exit(0);
+	            }
 	        }
+//	        printf("Vmid=%g\n", Vmid);
 	    }
 
 	    deltah = mid;          // Incremental salt deposit height (cm)
@@ -382,7 +448,7 @@ int main(int argc, char *argv[]){
 	    mid = 0.0;
 	    tem = 0.0;
 	    low = 0.0;
-	    high = R1calc;
+	    high = R2;
 
 		if (R2iceCap(low, volumes[i][2], R1calc, H) > 0.0) {
 			tem = low;
@@ -391,12 +457,16 @@ int main(int argc, char *argv[]){
 		}
 
 		iter = 0;
-		while (fabs(R2iceCap(mid, volumes[i][2], R1calc, H)) > threshold*R1calc) {
+		while (fabs(R2iceCap(mid, volumes[i][2], R1calc, H)) > threshold*R2) {
 			iter++;
 			mid = (low+high)/2.0;
-			if(R2iceCap(mid, volumes[i][2], R1calc, H) < -threshold*R1calc) low = mid;
-			if (R2iceCap(mid, volumes[i][2], R1calc, H) > threshold*R1calc) high = mid;
-			if (iter > 100) exit(0);
+			if(R2iceCap(mid, volumes[i][2], R1calc, H) < -threshold*R2) low = mid;
+			if (R2iceCap(mid, volumes[i][2], R1calc, H) > threshold*R2) high = mid;
+//			printf("mid=%g R2iceCap=%g\n", mid, R2iceCap(mid, volumes[i][2], R1calc, H));
+			if (iter > 100) {
+				printf("IceShellXtal: could not converge within 100 iterations on R2 calculation\n");
+				exit(0);
+			}
 		}
 
 	    R2 = mid;
@@ -468,14 +538,14 @@ int main(int argc, char *argv[]){
 	SDL_Texture* chamber_tex = NULL;
 	SDL_Surface* chamber = NULL;
 
-	File2tex("Graphics/IceShellXtalBG/IceShellXtalBG.001.jpeg", &background_tex, path);
+	File2tex("Graphics/IceShellXtalBG/IceShellXtalBG.002.jpeg", &background_tex, path);
 	File2surf("Graphics/Transparent.png", &chamber, path);
 
 	SDL_Event e;
 	SDL_PollEvent(&e);
 
 	SDL_Texture **num_tex;
-	ChamberPlot(&chamber, FontFile, ntemp, radius, R2Hcompo, Rchamber, R1, nsalts, contour);
+	ChamberPlot(&chamber, FontFile, ntemp, radius, R2Hcompo, Rchamber, R1, nsalts, contour, dbase_type);
 	chamber_tex = SDL_CreateTextureFromSurface(renderer, chamber);
 
 	//-------------------------------------------------------------------
@@ -487,7 +557,7 @@ int main(int argc, char *argv[]){
 
 			if (e.type == SDL_QUIT) quit = 1; // Close window
 			if (e.type == SDL_MOUSEBUTTONDOWN) {
-				ChamberPlot(&chamber, FontFile, ntemp, radius, R2Hcompo, Rchamber, R1, nsalts, contour);
+				ChamberPlot(&chamber, FontFile, ntemp, radius, R2Hcompo, Rchamber, R1, nsalts, contour, dbase_type);
 				chamber_tex = SDL_CreateTextureFromSurface(renderer, chamber);
 			}
 		}
@@ -604,7 +674,7 @@ int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, SDL_Tex
 //                     Chamber plot subroutine
 //-------------------------------------------------------------------
 
-int ChamberPlot(SDL_Surface **chamber, char *FontFile, int ntemp, double radius, double **R2Hcompo, double Rchamber, double R1, int nsalts, int contour) {
+int ChamberPlot(SDL_Surface **chamber, char *FontFile, int ntemp, double radius, double **R2Hcompo, double Rchamber, double R1, int nsalts, int contour, int dbase_type) {
 
 	SDL_Color white;
 	SDL_Color aqua;
@@ -675,7 +745,7 @@ int ChamberPlot(SDL_Surface **chamber, char *FontFile, int ntemp, double radius,
 				for (l=0;l<nsalts;l++) {
 					pos_old = pos;
 					pos += R2Hcompo[k][l+3];
-					if (gradient <= pos/100.0 && gradient > pos_old/100.0) color = minColor(R2Hcompo[0][l+3]);
+					if (gradient <= pos/100.0 && gradient > pos_old/100.0) color = minColor(R2Hcompo[0][l+3], dbase_type);
 				}
 
 				r = color.r; g = color.g; b = color.b; a = color.a;
@@ -754,7 +824,9 @@ int ExtractWrite(int instance, double*** data, int line, int nvar) {
 int MineralName(int i, char **name, int dbase_type) {
 
 	strcpy(*name, "Name not found, check indices in MineralName()");
-	int j = 15;
+	int j = 0;
+	if (!dbase_type) j = 15; // TC17 database
+	else j = 18;             // Carbonate-Si-CH4 database
 	if (i == j) strcpy(*name, "Ice(s)"); j = j+2;
 	if (i == j) strcpy(*name, "Halite"); j = j+2;
 	if (i == j) strcpy(*name, "Hydrohalite"); j = j+2;
@@ -913,7 +985,7 @@ double R2iceCap (double x, double Vsol, double R1, double H) {
  *
  *--------------------------------------------------------------------*/
 
-SDL_Color minColor (int i) {
+SDL_Color minColor (int i, int dbase_type) {
 
 	SDL_Color color;
 
@@ -977,7 +1049,9 @@ SDL_Color minColor (int i) {
 	SDL_Color iron;			iron.r = 94; iron.g = 94; iron.b = 94; iron.a = 255;
 	SDL_Color black; 		black.r = 30; black.g = 30; black.b = 30; black.a = 255;
 
-	int j = 15;
+	int j = 0;
+	if (!dbase_type) j = 15; // TC17 database
+	else j = 18; // Carbonate-Si-CH4 database
 
 	if (i == j) color = cyan;
 	j = j+2;
@@ -1023,32 +1097,32 @@ SDL_Color minColor (int i) {
     j = j+2;
     if (i == j) color = red;
     j = j+2;
+	if (i == j) color = blue;
+	j = j+2;
+	if (i == j) color = aqua;
+	j = j+2;
+	if (i == j) color = turquoise;
+	j = j+2;
+	if (i == j) color = ocean;
+	j = j+2;
     if (i == j) color = cayenne;
     j = j+2;
+    if (i == j) color = teal;
+    j = j+2;
+	if (i == j) color = blueberry;
+	j = j+2;
     if (i == j) color = maroon;
     j = j+2;
     if (i == j) color = maroon2;
     j = j+2;
     if (i == j) color = ice;
     j = j+2;
-    if (i == j) color = sky;
-    j = j+2;
     if (i == j) color = sea_foam;
     j = j+2;
-    if (i == j) color = turquoise;
-    j = j+2;
-    if (i == j) color = aqua;
-    j = j+2;
-    if (i == j) color = blueberry;
-    j = j+2;
-    if (i == j) color = blue;
-    j = j+2;
-    if (i == j) color = ocean;
+    if (i == j) color = sky;
     j = j+2;
 	if (i == j) color = midnight;
 	j = j+2;
-    if (i == j) color = teal;
-    j = j+2;
     if (i == j) color = honeydew;
     j = j+2;
     if (i == j) color = lime;
