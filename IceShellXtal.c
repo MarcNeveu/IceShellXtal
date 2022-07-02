@@ -12,7 +12,7 @@
 
 #include "Plot.h"
 
-int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, SDL_Texture* pies_tex, SDL_Texture **num_tex, char* FontFile);
+int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, SDL_Texture* pies_tex, char* FontFile);
 int ChamberPlot(SDL_Surface **chamber, char *FontFile, int ntemp, double radius, double **R2Hcompo, double Rchamber, double R1, int nsalts, int contour, int dbase_type);
 int ExtractWrite(int instance, double*** data, int line, int nvar);
 int MineralName(int i, char **name, int dbase_type);
@@ -97,7 +97,8 @@ int main(int argc, char *argv[]){
 	printf("------------------------------------------------------\n\n");
 
 	int phreeqc = 0;
-	char dbase[1024];     dbase[0] = '\0'; 	// Path to thermodynamic database
+	char *dbase = (char *)malloc(1024*sizeof(char));
+	dbase[0] = '\0'; 	// Path to thermodynamic database
 	int nvar = 200; // Max. number of variables output by PHREEQC SELECTED_OUTPUT
 
 	double **simdata = (double**) malloc(ntemp*sizeof(double*)); // Simulation data storage table
@@ -281,7 +282,7 @@ int main(int argc, char *argv[]){
 	if (volumes == NULL) printf("IceShellXtal: Not enough memory to create volumes[%d]\n", ntemp);
 	for (i=0;i<ntemp;i++) {
 		volumes[i] = (double*) malloc((nsalts+5)*sizeof(double));
-		if (volumes[i] == NULL) printf("IceShellXtal: Not enough memory to create volumes[%d][%d]\n", ntemp, nsalts+5); // 18 columns in System_main_tbl.txt
+		if (volumes[i] == NULL) printf("IceShellXtal: Not enough memory to create volumes[%d][%d]\n", ntemp, nsalts+5);
 	}
 	for (i=0;i<ntemp;i++) {
 		for(j=0;j<nsalts+5;j++) volumes[i][j] = 0.0;
@@ -369,7 +370,7 @@ int main(int argc, char *argv[]){
 		}
 		printf("Rchamber = %g, R1 = %g\n", Rchamber, R1);
 
-		printf("\nExiting IceShellXtal...\n", Rchamber, R1);
+		printf("\nExiting IceShellXtal...\n");
 		exit(0);
 	}
 	// Not mixed, fractional crystallization mode. Output chamber size and inner radius R1 at temperature of first salt formation, and go on.
@@ -411,7 +412,7 @@ int main(int argc, char *argv[]){
 	        high = R2;
 
 	        if (V - VsphSegm(low, R2, b) > 0.0) { // Invert bounds
-	        	printf("Inverting bounds in binary search for deltah\n");
+//	        	printf("Inverting bounds in binary search for deltah\n");
 	            tem = low;
 	            low = high;
 	            high = tem;
@@ -462,7 +463,8 @@ int main(int argc, char *argv[]){
 			mid = (low+high)/2.0;
 			if(R2iceCap(mid, volumes[i][2], R1calc, H) < -threshold*R2) low = mid;
 			if (R2iceCap(mid, volumes[i][2], R1calc, H) > threshold*R2) high = mid;
-//			printf("mid=%g R2iceCap=%g\n", mid, R2iceCap(mid, volumes[i][2], R1calc, H));
+//			printf("i=%d, iteration %d, mid=%g R2iceCap=%g, volumes[i][2]=%g, R1calc=%g, H=%g\n",
+//					i, iter, mid, R2iceCap(mid, volumes[i][2], R1calc, H), volumes[i][2], R1calc, H); // Debug: see if y=0 is crossed between x=0..R2
 			if (iter > 100) {
 				printf("IceShellXtal: could not converge within 100 iterations on R2 calculation\n");
 				exit(0);
@@ -561,7 +563,7 @@ int main(int argc, char *argv[]){
 				chamber_tex = SDL_CreateTextureFromSurface(renderer, chamber);
 			}
 		}
-		UpdateDisplays(renderer, background_tex, chamber_tex, num_tex, FontFile);
+		UpdateDisplays(renderer, background_tex, chamber_tex, FontFile);
 	}
 
 	//-------------------------------------------------------------------
@@ -585,11 +587,12 @@ int main(int argc, char *argv[]){
 		free(volumes[i]);
 		free(R2Hcompo[i]);
 	}
-	free (simdata);
+	free(simdata);
 	free(volumes);
-	free (R2Hcompo);
+	free(R2Hcompo);
 
-	free (name);
+	free(name);
+	free(dbase);
 
 	printf("Exiting IceShellXtal...\n");
 	return 0;
@@ -599,7 +602,7 @@ int main(int argc, char *argv[]){
 //                      Display updating subroutine
 //-------------------------------------------------------------------
 
-int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, SDL_Texture* chamber_tex, SDL_Texture **num_tex, char* FontFile) {
+int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, SDL_Texture* chamber_tex, char* FontFile) {
 
 	SDL_RenderClear(renderer);
 	ApplySurface(0, 0, background_tex, renderer, NULL);
@@ -694,6 +697,8 @@ int ChamberPlot(SDL_Surface **chamber, char *FontFile, int ntemp, double radius,
 
 	x = 400; y = 325;
 
+	double R2mem = 1.0; // Memorize R2 in case of resets on R2 and H if R2 < R1-H at any step
+
 	// Outer chamber
 	for (i=0;i<2*(int)radius;i++) {
 		for (j=0;j<2*(int)radius;j++) {
@@ -738,8 +743,8 @@ int ChamberPlot(SDL_Surface **chamber, char *FontFile, int ntemp, double radius,
 															    (b*(1-abs(y-yvar)/radius) + 2*b)/3, a);
 				}
 				// Salt deposit
-				double gradient = (double)(xvar-(x-ceil(radius*R2Hcompo[k][1]*R1/Rchamber)))
-						                         / (2.0*radius*R2Hcompo[k][1]*R1/Rchamber);
+				double gradient = (double)(xvar-(x-floor(0.95*radius*sqrt(pow(R2Hcompo[k][1],2)-pow(R2mem-R2Hcompo[k][2],2))*R1/Rchamber))) // Width of spherical segment = sqrt(R2^2 - (R1-H)^2)
+						                         / (2.0*0.95*radius*sqrt(pow(R2Hcompo[k][1],2)-pow(R2mem-R2Hcompo[k][2],2))*R1/Rchamber);
 				double pos = 0.0;
 				double pos_old = 0.0;
 				for (l=0;l<nsalts;l++) {
@@ -777,7 +782,7 @@ int ChamberPlot(SDL_Surface **chamber, char *FontFile, int ntemp, double radius,
 	    if (R2Hcompo[k][1] < 1.0-R2Hcompo[k][2]) {
 	    	printf("R2/R1=%g < 1-H/R1=1-%g, resetting R1 and H at k=%d, T=%g\n", R2Hcompo[k][1], R2Hcompo[k][2], k, R2Hcompo[k][0]);
 	        R1 *= R2Hcompo[k][1];
-	        double R2mem = R2Hcompo[k][1];
+	        R2mem = R2Hcompo[k][1];
 	        double Hmem = R2Hcompo[k][2];
 	        for (i=0;i<ntemp;i++) {
 	        	R2Hcompo[i][1] /= R2mem;
@@ -938,6 +943,7 @@ double Vm(char *name, char *dbase) {
 			break;
 		}
 	}
+	fclose(f);
 	return molarvol;
 }
 

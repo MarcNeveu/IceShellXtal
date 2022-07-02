@@ -142,7 +142,7 @@ SAVE solution 1
 SAVE equilibrium_phases 1 # Only for the first iteration.
 
 SELECTED_OUTPUT
- -file /Users/mneveu/eclipse-workspace/IceShellXtal/PHREEQC/Out/selected.out
+ -file ./selected.out
  -high_precision true 
  -reset false
  -simulation true
@@ -153,7 +153,7 @@ SELECTED_OUTPUT
  -water true
  -charge_balance true
  -percent_error true
- -totals Ca Mg Na K Cl S Bah
+ -totals Ca Mg Na K Cl S C Si Mtg Bah
  -activities H2O
  -equilibrium_phases Ice(s) Halite Hydrohalite Sylvite Antarcticite Bischofite MgCl2:8H2O MgCl2:12H2O Carnallite Tachyhydrite Anhydrite Arcanite Epsomite Gypsum Meridianiite Mirabilite Picromerite Glaserite Bloedite Kieserite Thenardite Hexahydrite Aragonite Artinite Calcite Dolomite Hydromagnesite Ikaite Kalicinite Landsfordite Magnesite Na2CO3:7H2O Nahcolite Natron Nesquehonite Trona Vaterite Akermanite Anthophyllite Antigorite Chalcedony Chrysotile Diopside Enstatite Forsterite Quartz Sepiolite SiO2(am) Talc Methane_hydrate
 
