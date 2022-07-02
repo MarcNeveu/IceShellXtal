@@ -395,21 +395,20 @@ int main(int argc, char *argv[]){
 
 	for (i=firstSalt;i<ntemp;i++) {
 //		printf("i=%d, Vsol=%g, b=%g, H=%g, R1calc=%g, R2=%g\n", i, volumes[i][2], b, H, R1calc, R2);
-		// Calculate H, the cumulative height of the salt deposit, using a binary search. Store in R2Hcompo.
+		// Calculate deltah, the cumulative height of the salt deposit, using a binary search. Store cumulative height H in R2Hcompo.
 	    // If ice covers salt, reset salt deposit height and reset R1calc to R2
 	    if (R2 < R1calc-H) {
-	        for (j=i;j<ntemp;j++) R1calc = R2;
-	        R2 = R1calc;
+	        R1calc = R2;
 	        H = 0;
 	    }
-	    if (volumes[i][2] < volumes[0][2]*1.0e-3) break; // Stop when solution volume is sufficiently low
-	    else {
+//	    if (volumes[i][2] < volumes[0][2]*1.0e-3) break; // Stop when solution volume is sufficiently low
+//	    else {
 	        b = R1calc - H;
 	        V = volumes[i][3]; // Incremental salt volume (cm3)
 	        mid = 0.0;
 	        tem = 0.0;
 	        low = 0.0;
-	        high = R2;
+	        high = 2.0*R2;
 
 	        if (V - VsphSegm(low, R2, b) > 0.0) { // Invert bounds
 //	        	printf("Inverting bounds in binary search for deltah\n");
@@ -439,7 +438,7 @@ int main(int argc, char *argv[]){
 	            }
 	        }
 //	        printf("Vmid=%g\n", Vmid);
-	    }
+//	    }
 
 	    deltah = mid;          // Incremental salt deposit height (cm)
 	    H = H+deltah;          // Cumulative salt deposit height (cm)
@@ -463,7 +462,7 @@ int main(int argc, char *argv[]){
 			mid = (low+high)/2.0;
 			if(R2iceCap(mid, volumes[i][2], R1calc, H) < -threshold*R2) low = mid;
 			if (R2iceCap(mid, volumes[i][2], R1calc, H) > threshold*R2) high = mid;
-//			printf("i=%d, iteration %d, mid=%g R2iceCap=%g, volumes[i][2]=%g, R1calc=%g, H=%g\n",
+//			printf("i=%d, iteration %d, mid=%.12g R2iceCap=%g, volumes[i][2]=%.12g, R1calc=%.12g, H=%.12g\n",
 //					i, iter, mid, R2iceCap(mid, volumes[i][2], R1calc, H), volumes[i][2], R1calc, H); // Debug: see if y=0 is crossed between x=0..R2
 			if (iter > 100) {
 				printf("IceShellXtal: could not converge within 100 iterations on R2 calculation\n");
