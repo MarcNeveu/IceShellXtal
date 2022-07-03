@@ -116,10 +116,10 @@ H4SiO4 = H3SiO4- + H+  # from pitzer.dat
 	-analytic	-302.3724	-0.050698	15669.69	108.18466	-1119669.0
 	-Vm  7.94  1.0881  5.3224  -2.8240  1.4767 # supcrt + H2O in a1
 
-H4SiO4 = H2SiO4-2 + 2 H+ # from pitzer.dat, missing Vm
-	-log_k  -23.0;  -delta_h 17.6 kcal
-	-analytic	-294.0184	-0.072650	11204.49	108.18466	-1119669.0
-	# Missing Vm
+#H4SiO4 = H2SiO4-2 + 2 H+ # from pitzer.dat, missing Vm
+#	-log_k  -23.0;  -delta_h 17.6 kcal
+#	-analytic	-294.0184	-0.072650	11204.49	108.18466	-1119669.0
+#	# Missing Vm
 
 PHASES
 Akermanite

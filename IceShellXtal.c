@@ -408,7 +408,7 @@ int main(int argc, char *argv[]){
 	        mid = 0.0;
 	        tem = 0.0;
 	        low = 0.0;
-	        high = 2.0*R2;
+	        high = R2; // Technically, the upper bound could be as high as 2*R2, but this can yield weird results of H>exp(>100) and R2=0 at a few i near ntemp
 
 	        if (V - VsphSegm(low, R2, b) > 0.0) { // Invert bounds
 //	        	printf("Inverting bounds in binary search for deltah\n");
