@@ -408,7 +408,7 @@ int main(int argc, char *argv[]){
 	        mid = 0.0;
 	        tem = 0.0;
 	        low = 0.0;
-	        high = R2; // Technically, the upper bound could be as high as 2*R2, but this can yield weird results of H>exp(>100) and R2=0 at a few i near ntemp
+	        high = R2; // The upper bound could be as high as 2*R2, but this can yield weird results of H>exp(>100) and R2=0 at a few i near ntemp
 
 	        if (V - VsphSegm(low, R2, b) > 0.0) { // Invert bounds
 //	        	printf("Inverting bounds in binary search for deltah\n");
@@ -433,7 +433,7 @@ int main(int argc, char *argv[]){
 	            if (V - Vmid > threshold*V) high = mid;
 //	            printf("i=%d, iteration %d, deltah = %.12g cm, V=%g cm3, Vmid = %g cm3\n", i, iter, mid, V, Vmid);
 	            if (iter > 100) {
-	            	printf("IceShellXtal: could not converge within 100 iterations on H calculation\n");
+	            	printf("IceShellXtal: could not converge within 100 iterations on H calculation at temperature step %d\n", i);
 	            	exit(0);
 	            }
 	        }
@@ -465,7 +465,7 @@ int main(int argc, char *argv[]){
 //			printf("i=%d, iteration %d, mid=%.12g R2iceCap=%g, volumes[i][2]=%.12g, R1calc=%.12g, H=%.12g\n",
 //					i, iter, mid, R2iceCap(mid, volumes[i][2], R1calc, H), volumes[i][2], R1calc, H); // Debug: see if y=0 is crossed between x=0..R2
 			if (iter > 100) {
-				printf("IceShellXtal: could not converge within 100 iterations on R2 calculation\n");
+				printf("IceShellXtal: could not converge within 100 iterations on R2 calculation at temperature step %d\n", i);
 				exit(0);
 			}
 		}
@@ -732,7 +732,13 @@ int ChamberPlot(SDL_Surface **chamber, char *FontFile, int ntemp, double radius,
 
 				// Ice rim
 				color = cyan;
-				r = color.r; g = color.g; b = color.b; a = ((int)R2Hcompo[k][0]-250)/23.15*color.a;
+				if (R2Hcompo[k][0] > 250.0) {
+					r = color.r; g = color.g; b = color.b; a = ((int)R2Hcompo[k][0]-250)/23.15*color.a;
+				}
+				else {
+					color = white;
+					r = color.r; g = color.g; b = color.b; a = color.a;
+				}
 				if (sqrt((xvar-x)*(xvar-x)+(yvar-y)*(yvar-y)) < radius*R2Hcompo[k-1][1]*R1/Rchamber
 						&& sqrt((xvar-x)*(xvar-x)+(yvar-y)*(yvar-y)) >= radius*R2Hcompo[k][1]*R1/Rchamber
 						&& yvar-y <= (int)(radius*R1/Rchamber*(1.0-R2Hcompo[k][2]))) {
