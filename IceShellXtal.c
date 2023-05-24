@@ -393,7 +393,9 @@ int main(int argc, char *argv[]){
 	double threshold = 1.0e-6;    // Binary search relative threshold to determine convergence
 	int iter = 0;                 // Number of iterations in binary search
 
+	int stoploop = 0;
 	for (i=firstSalt;i<ntemp;i++) {
+		if (stoploop) break;
 //		printf("i=%d, Vsol=%g, b=%g, H=%g, R1calc=%g, R2=%g\n", i, volumes[i][2], b, H, R1calc, R2);
 		// Calculate deltah, the cumulative height of the salt deposit, using a binary search. Store cumulative height H in R2Hcompo.
 	    // If ice covers salt, reset salt deposit height and reset R1calc to R2
@@ -434,7 +436,9 @@ int main(int argc, char *argv[]){
 //	            printf("i=%d, iteration %d, deltah = %.12g cm, V=%g cm3, Vmid = %g cm3\n", i, iter, mid, V, Vmid);
 	            if (iter > 100) {
 	            	printf("IceShellXtal: could not converge within 100 iterations on H calculation at temperature step %d\n", i);
-	            	exit(0);
+					stoploop = 1;
+					break;
+//	            	exit(0);
 	            }
 	        }
 //	        printf("Vmid=%g\n", Vmid);
@@ -466,7 +470,9 @@ int main(int argc, char *argv[]){
 //					i, iter, mid, R2iceCap(mid, volumes[i][2], R1calc, H), volumes[i][2], R1calc, H); // Debug: see if y=0 is crossed between x=0..R2
 			if (iter > 100) {
 				printf("IceShellXtal: could not converge within 100 iterations on R2 calculation at temperature step %d\n", i);
-				exit(0);
+				stoploop = 1;
+				break;
+//				exit(0);
 			}
 		}
 
@@ -681,9 +687,13 @@ int ChamberPlot(SDL_Surface **chamber, char *FontFile, int ntemp, double radius,
 	SDL_Color white;
 	SDL_Color aqua;
 	SDL_Color cyan;
+	SDL_Color grey;
+	SDL_Color black;
 	white.r = 250; white.g = 250; white.b = 250; white.a = 255;
 	aqua.r = 0; aqua.g = 128; aqua.b = 255; aqua.a = 255;
 	cyan.r = 138; cyan.g = 240; cyan.b = 255; cyan.a = 255;
+	grey.r = 128; grey.g = 128; grey.b = 128; grey.a = 255;
+	black.r = 0; black.g = 0; black.b = 0; black.a = 255;
 
 	SDL_Color color;
 
@@ -731,13 +741,22 @@ int ChamberPlot(SDL_Surface **chamber, char *FontFile, int ntemp, double radius,
 				xvar = x - (int)radius + i; yvar = y - (int)radius + j;
 
 				// Ice rim
-				color = cyan;
-				if (R2Hcompo[k][0] > 250.0) {
+				color = black;
+				if ((R2Hcompo[k][0] <= 270.0 && R2Hcompo[k-1][0] > 270)
+			     || (R2Hcompo[k][0] <= 260.0 && R2Hcompo[k-1][0] > 260)
+				 || (R2Hcompo[k][0] <= 250.0 && R2Hcompo[k-1][0] > 250)
+				 || (R2Hcompo[k][0] <= 240.0 && R2Hcompo[k-1][0] > 240)
+				 || (R2Hcompo[k][0] <= 230.0 && R2Hcompo[k-1][0] > 230)
+				 || (R2Hcompo[k][0] <= 220.0 && R2Hcompo[k-1][0] > 220)) {
+					r = color.r; g = color.g; b = color.b; a = color.a;
+				}
+				else if (R2Hcompo[k][0] > 250.0) {
+					color = cyan;
 					r = color.r; g = color.g; b = color.b; a = ((int)R2Hcompo[k][0]-250)/23.15*color.a;
 				}
 				else {
-					color = white;
-					r = color.r; g = color.g; b = color.b; a = color.a;
+					color = grey;
+					r = color.r; g = color.g; b = color.b; a = (250-(int)R2Hcompo[k][0])/23.15*color.a;
 				}
 				if (sqrt((xvar-x)*(xvar-x)+(yvar-y)*(yvar-y)) < radius*R2Hcompo[k-1][1]*R1/Rchamber
 						&& sqrt((xvar-x)*(xvar-x)+(yvar-y)*(yvar-y)) >= radius*R2Hcompo[k][1]*R1/Rchamber

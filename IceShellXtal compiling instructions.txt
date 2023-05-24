@@ -2,7 +2,6 @@ Create a folder called "Release" in the main IceShellXtal folder.
 
 cd /.../IceShellXtal/Release
 
-gcc -I/usr/local/include -I/Library/Frameworks/SDL2.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_image.framework/Versions/A/Headers -O3 -Wall -c -fmessage-length=0 -MMD -MP -MF"IceShellXtal.d" -MT"IceShellXtal.o" -o
-"IceShellXtal.o" "../IceShellXtal.c"
+gcc -I/usr/local/include -I/Library/Frameworks/SDL2.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_image.framework/Versions/A/Headers -O3 -Wall -c -fmessage-length=0 -MMD -MP -MF"IceShellXtal.d" -MT"IceShellXtal.o" -o"IceShellXtal.o" "../IceShellXtal.c"
 
 gcc -L/usr/lib -L/usr/local/lib -F/Library/Frameworks -framework SDL2 -framework SDL2_image -o IceShellXtal IceShellXtal.o /usr/local/lib/libiphreeqc-3.7.3.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a
