@@ -42,7 +42,16 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IceShellXtal v22.6\n");
+	printf("IceShellXtal v24.12\n"                                                );
+	printf("Copyright (C) 2022-2024 Marc Neveu (marc.f.neveu@nasa.gov)\n\n"       );
+	printf("This program is free software: you can redistribute it and/or\n"      );
+	printf("modify it under the terms of the GNU General Public License as\n"     );
+	printf("published by the Free Software Foundation, either version 3 of the\n" );
+	printf("License, or (at your option) any later version. This program is\n"    );
+	printf("distributed in the hope that it will be useful, but without any\n"    );
+	printf("warranty. See the GNU General Public License for more details:\n"     );
+	printf("<http://www.gnu.org/licenses/>.\n"                                    );
+	printf("-------------------------------------------------------------------\n");
 	printf("-------------------------------------------------------------------\n");
 
 	// Get current directory. Works for Mac only! To switch between platforms, see:
