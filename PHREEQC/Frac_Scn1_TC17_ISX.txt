@@ -1,0 +1,110 @@
+# ----------------------------------------------------------
+# Marc Neveu - 2020 - Freezing routine written as PHREEQC input file and emulating the capabilities of FREZCHEM
+#
+# Many thanks to Jonathan Toner for helpful suggestions that make the routine run more smoothly:
+#   - KNOBS settings below 
+#   - Use of a dummy element, Bah, that keeps a bit of solution unfrozen and allows the program to proceed 
+#     even when a lot of water starts to freeze near the eutectic.
+#
+# ----------------------------------------------------------
+
+#DATABASE ./je7b00265_si_001_vm.txt
+
+TITLE Set up temperature loop for freezing simulation
+
+KNOBS
+
+	-iterations	1000
+	-step_size	1.1
+	-pe_step_size	1
+
+SOLUTION 1 Ocean water
+
+	pH		6.05	charge	
+	temp		0.4
+	pressure	99	# atm, *1.01325 for bars
+#	pe		4.5
+	water		1	kg
+	units		mol/kgw
+	Ca		2.76E-03
+	Mg		2.83E-02
+	Na		9.19E-02
+	K		5.85E-03
+	Cl		2.00E-02
+	S		9.51E-02
+	Bah		9.51E-09	# Abundance must be negligible so as not to affect the chemistry
+
+
+EQUILIBRIUM_PHASES 1 Minerals allowed to precipitate
+# precipitate_only for fractional Xtal?
+# Commented out species with no solubility data temperature below 273 K
+
+	# Phase name	# Target SI	# mol	# precipitate_only	# Formula
+	Ice(s)		0		0				# H2O
+
+# Chlorides
+	Halite		0		0				# NaCl
+	Hydrohalite	0		0				# NaCl:2H2O
+	Sylvite		0		0				# KCl
+	Antarcticite	0		0				# CaCl2:6H2O
+	Bischofite	0		0				# MgCl2:6H2O
+	MgCl2:8H2O	0		0				# MgCl2:8H2O
+	MgCl2:12H2O	0		0				# MgCl2:12H2O
+	Carnallite	0		0				# KMgCl3:6H2O
+	Tachyhydrite	0		0				# CaCl2:(MgCl2)2:12H2O
+
+# Sulfates
+	Anhydrite	0		0				# CaSO4	
+	Arcanite	0		0				# K2SO4
+	Epsomite	0		0				# MgSO4:7H2O
+	Gypsum		0		0				# CaSO4:2H2O	
+	Meridianiite	0		0				# MgSO4:11H2O
+	Mirabilite	0		0				# Na2SO4:10H2O
+	Picromerite	0		0				# MgSO4:K2SO4:6H2O
+	Bloedite	0		0				# Na2Mg(SO4)2:4H2O
+	Kieserite	0		0				# MgSO4:H2O
+	Thenardite	0		0				# Na2SO4
+	Na2SO4:7H2O	0		0				# Na2SO4:7H2O
+	Starkeyite	0		0				# MgSO4:4H2O
+	Pentahydrite	0		0				# MgSO4:5H2O
+	Hexahydrite	0		0				# MgSO4:6H2O
+	Bassanite	0		0				# CaSO4:0.5H2O
+	Glaserite	0		0				# Na2SO4:3K2SO4
+	Glauberite	0		0				# Na2SO4:CaSO4
+	Labile_Salt	0		0				# Na4(SO4)2:CaSO4:2H2O
+	Leonite		0		0				# K2SO4:MgSO4:4H2O
+	Langbeinite	0		0				# K2SO4:2MgSO4
+#	Syngenite	0		0				# K2SO4:CaSO4:H2O
+	Polyhalite	0		0				# K2SO4:MgSO4:Ca2(SO4)2:2H2O
+
+# Mixed chloride-sulfate
+	Kainite		0		0				# KCl:MgSO4:2.75H2O
+
+SAVE solution 1
+SAVE equilibrium_phases 1 # Only for the first iteration.
+
+SELECTED_OUTPUT
+ -file ./selected.out
+ -high_precision true 
+ -reset false
+ -simulation true
+ -pH true
+ -temperature true
+ -pe false
+ -ionic_strength true
+ -water true
+ -charge_balance true
+ -percent_error true
+ -totals Ca Mg Na K Cl S Bah
+ -activities H2O
+ -equilibrium_phases Ice(s) Halite Hydrohalite Sylvite Antarcticite Bischofite MgCl2:8H2O MgCl2:12H2O Carnallite Tachyhydrite Anhydrite Arcanite Epsomite Gypsum Meridianiite Mirabilite Picromerite Glaserite Bloedite Kieserite Thenardite Hexahydrite Na2SO4:7H2O Starkeyite Pentahydrite Bassanite Glauberite Labile_Salt Leonite Langbeinite Syngenite Polyhalite Kainite
+
+USER_PUNCH
+ -headings Solution_density Solution_volume Pressure Specific_conductance
+ -start
+ PUNCH RHO      # kg/L
+ PUNCH SOLN_VOL # L
+ PUNCH PRESSURE # atm
+ PUNCH SC       # uS/cm, need to have -dw values in database for nonzero output
+
+END

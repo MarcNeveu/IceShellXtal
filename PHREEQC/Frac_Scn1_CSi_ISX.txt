@@ -1,0 +1,153 @@
+# ----------------------------------------------------------
+# Marc Neveu - 2020 - Freezing routine written as PHREEQC input file and emulating the capabilities of FREZCHEM
+#
+# Many thanks to Jonathan Toner for helpful suggestions that make the routine run more smoothly:
+#   - KNOBS settings below 
+#   - Use of a dummy element, Bah, that keeps a bit of solution unfrozen and allows the program to proceed 
+#     even when a lot of water starts to freeze near the eutectic.
+#
+# The routine works by:
+#
+# 1. First, describing a solution in the Ca, Mg, Na, K, Cl, S system (SOLUTION block), as well as salt species allowed
+# to precipitate upon freezing (EQUILIBRIUM PHASES block). 
+#
+# 2. Setting up a loop on temperature, water mass, or pressure by writing an intermediate SELECTED OUTPUT file,
+# ./frzloopsetup.txt, using the USER_PUNCH block. In this loop, the temperature, water mass, and/or pressure of the
+# SOLUTION are modified as specified, the post-step solution is saved (and so are the equilibrium phases for an
+# equilibrium crystallization), and the step simulation results are written to a custom-named selected output file
+# in the ./Out folder.
+#
+# 3. Executing ./frzloopsetup.txt via the INCLUDE$ keyword. 
+# ----------------------------------------------------------
+
+#DATABASE ./PHREEQC_TC17_vm.txt # Only chlorides and sulfates but internally consistent
+DATABASE ./frezchemSiCH4.dat # With carbonates, silica, and methane but less self-consistent
+
+TITLE Set up temperature loop for freezing simulation
+
+KNOBS
+
+	-iterations	2000
+	-step_size	1.05
+	-pe_step_size	1
+#	-logfile	true
+#	-tolerance 	1e-18
+#	-diagonal_scale	true
+
+#SOLUTION_SPECIES
+#	H2O + 0.01 e- = H2O-0.01
+#	log_k 		-9.0
+
+SOLUTION 1 Ocean water
+
+	pH		6.05	charge
+	temp		0.4
+	pressure	98.7		# atm, *1.01325 for bars
+	water		1	kg
+	units		mol/kgw
+	Ca		2.76E-03
+	Mg		2.83E-02
+	Na		9.19E-02
+	K		5.85E-03
+	Cl		2.00E-02
+	S		4.47E-02
+	C		5.04E-02	# CO2+carbonate, comment out if using TC17 database
+	Si		2.86E-05	# silica, comment out if using TC17 database
+#	Mtg		5.27E-12 	# methane, comment out if using TC17 database
+	Bah		1.00E-06	# Abundance must be negligible so as not to affect the chemistry
+#	H2O-0.01	1.00e-9
+
+EQUILIBRIUM_PHASES 1 Minerals allowed to precipitate
+# precipitate_only for fractional Xtal?
+# Commented out species with no solubility data temperature below 273 K
+
+	# Phase name	# Target SI	# mol	# precipitate_only	# Formula
+	Ice(s)		0		0				# H2O
+
+# Chlorides
+	Halite		0		0				# NaCl
+	Hydrohalite	0		0				# NaCl:2H2O
+	Sylvite		0		0				# KCl
+	Antarcticite	0		0				# CaCl2:6H2O
+	Bischofite	0		0				# MgCl2:6H2O
+	MgCl2:8H2O	0		0				# MgCl2:8H2O
+	MgCl2:12H2O	0		0				# MgCl2:12H2O
+	Carnallite	0		0				# KMgCl3:6H2O
+	Tachyhydrite	0		0				# CaCl2:(MgCl2)2:12H2O
+
+# Sulfates
+	Anhydrite	0		0				# CaSO4	
+	Arcanite	0		0				# K2SO4
+	Epsomite	0		0				# MgSO4:7H2O
+	Gypsum		0		0				# CaSO4:2H2O	
+	Meridianiite	0		0				# MgSO4:11H2O
+	Mirabilite	0		0				# Na2SO4:10H2O
+	Picromerite	0		0				# MgSO4:K2SO4:6H2O
+	Glaserite	0		0				# Na2SO4:3K2SO4
+	Bloedite	0		0				# Na2Mg(SO4)2:4H2O
+	Kieserite	0		0				# MgSO4:H2O
+	Thenardite	0		0				# Na2SO4
+	Hexahydrite	0		0				# MgSO4:6H2O
+
+# Carbonates, comment out if using TC17 database
+	Aragonite	0		0				# CaCO3
+	Artinite	0		0				# Mg2CO3(OH)2:3H2O
+	Calcite		0		0				# CaCO3
+	Dolomite	0		0				# CaMg(CO3)2
+	Hydromagnesite	0		0				# (MgCO3)3:Mg(OH)2:3H2O
+	Ikaite		0		0				# CaCO3:6H2O
+	Kalicinite	0		0				# KHCO3
+	Landsfordite	0		0				# MgCO3:5H2O
+	Magnesite	0		0				# MgCO3
+	Na2CO3:7H2O	0		0				# Na2CO3:7H2O
+	Nahcolite	0		0				# NaHCO3
+	Natron		0		0				# Na2CO3:10H2O
+	Nesquehonite	0		0				# MgCO3:3H2O
+	Trona		0		0				# Na3H(CO3)2:2H2O
+	Vaterite	0		0				# CaCO3	
+
+# Silicates, comment out if using TC17 database
+	Akermanite	0		0				# Ca2MgSi2O7
+	Anthophyllite	0		0				# Mg7Si8O22(OH)2
+	Antigorite	0		0				# Mg48Si34O85(OH)62
+#	Chalcedony	0		0				# SiO2
+	Chrysotile	0		0				# Mg3Si2O5(OH)4
+	Diopside	0		0				# CaMgSi2O6
+	Enstatite	0		0				# MgSiO3
+	Forsterite	0		0				# Mg2SiO4
+#	Quartz		0		0				# SiO2
+	Sepiolite	0		0				# Mg4Si6O15(OH)2:6H2O
+	SiO2(am)	0		0				# SiO2
+	Talc		0		0				# Mg3Si4O10(OH)2
+
+# Methane hydrate, comment out if using TC17 database
+	Methane_hydrate	0		0				# CH4:6H2O
+
+SAVE solution 1
+SAVE equilibrium_phases 1 # Only for the first iteration.
+
+SELECTED_OUTPUT
+ -file ./selected.out
+ -high_precision true 
+ -reset false
+ -simulation true
+ -pH true
+ -temperature true
+ -pe false
+ -ionic_strength true
+ -water true
+ -charge_balance true
+ -percent_error true
+ -totals Ca Mg Na K Cl S C Si Mtg Bah
+ -activities H2O
+ -equilibrium_phases Ice(s) Halite Hydrohalite Sylvite Antarcticite Bischofite MgCl2:8H2O MgCl2:12H2O Carnallite Tachyhydrite Anhydrite Arcanite Epsomite Gypsum Meridianiite Mirabilite Picromerite Glaserite Bloedite Kieserite Thenardite Hexahydrite Aragonite Artinite Calcite Dolomite Hydromagnesite Ikaite Kalicinite Landsfordite Magnesite Na2CO3:7H2O Nahcolite Natron Nesquehonite Trona Vaterite Akermanite Anthophyllite Antigorite Chalcedony Chrysotile Diopside Enstatite Forsterite Quartz Sepiolite SiO2(am) Talc Methane_hydrate
+
+USER_PUNCH
+ -headings Solution_density Solution_volume Pressure Specific_conductance
+ -start
+ PUNCH RHO      # kg/L
+ PUNCH SOLN_VOL # L
+ PUNCH PRESSURE # atm
+ PUNCH SC       # uS/cm, need to have -dw values in database for nonzero output
+
+END
